@@ -22,4 +22,4 @@ RUN python -c "from TTS.api import TTS; TTS('eduardem/xtts-v2-romanian')" || tru
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
