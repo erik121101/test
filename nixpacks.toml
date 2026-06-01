@@ -1,9 +1,11 @@
-[build]
-builder = "nixpacks"
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip", "ffmpeg", "libsndfile"]
 
-[deploy]
-startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --threads 4"
-healthcheckPath = "/"
-healthcheckTimeout = 300
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3
+[phases.install]
+cmds = [
+  "python3.11 -m pip install --upgrade pip",
+  "python3.11 -m pip install -r requirements.txt"
+]
+
+[start]
+cmd = "python3.11 -m gunicorn app:app --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --threads 4"
