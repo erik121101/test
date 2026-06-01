@@ -8,7 +8,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Install PyTorch CPU first (smaller image — GPU available via Railway env)
+# Accept Coqui TTS license non-interactively
+ENV COQUI_TOS_AGREED=1
+
+# Install PyTorch CPU
 RUN pip install --no-cache-dir torch==2.3.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cpu
 
 COPY requirements.txt .
@@ -16,9 +19,8 @@ RUN pip install --no-cache-dir TTS==0.22.0 fastapi==0.115.0 uvicorn[standard]==0
 
 COPY . .
 
-# Pre-download the model at build time so cold starts are fast
-# Comment this out if Railway build times are too long (model = ~2GB)
-RUN python -c "from TTS.api import TTS; TTS('eduardem/xtts-v2-romanian')" || true
+# Pre-download model at build time (COQUI_TOS_AGREED=1 e setat, nu mai cere interactiv)
+RUN python -c "from TTS.api import TTS; TTS('eduardem/xtts-v2-romanian')"
 
 EXPOSE 8000
 
