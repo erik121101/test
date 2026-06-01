@@ -1,0 +1,6 @@
+flask>=3.0.0
+gunicorn>=21.0.0
+omnivoice
+torch>=2.0.0
+torchaudio>=2.0.0
+soundfile

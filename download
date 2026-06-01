@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+uploads/
+outputs/
+voices.json
+.env
+venv/
+*.egg-info/

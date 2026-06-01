@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OmniVoice TTS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f11;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: #2e2e38;
+    --text: #f0f0f4;
+    --muted: #8888a0;
+    --accent: #7c6ff7;
+    --accent-dim: #3d3880;
+    --success: #3ecf8e;
+    --danger: #f87171;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 0.4rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+  }
+
+  .card h2 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card h2 .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
+    resize: vertical;
+  }
+
+  textarea:focus, input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { min-height: 120px; }
+
+  .voice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .voice-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .voice-btn:hover { border-color: var(--accent); }
+  .voice-btn.active { border-color: var(--accent); background: var(--accent-dim); }
+  .voice-btn .icon { font-size: 1.1rem; }
+
+  .voice-btn-none {
+    border-style: dashed;
+    color: var(--muted);
+  }
+
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); }
+  .upload-zone input[type="file"] { display: none; }
+
+  .upload-zone p {
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .upload-zone .filename {
+    color: var(--success);
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+  }
+
+  .row { display: flex; gap: 0.75rem; align-items: flex-end; }
+  .row .grow { flex: 1; }
+
+  .btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-sm {
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .btn-outline:hover { border-color: var(--accent); background: var(--accent-dim); }
+
+  .status-bar {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+  }
+
+  .status-bar.visible { display: flex; }
+  .status-bar.error { color: var(--danger); }
+  .status-bar.success { color: var(--success); }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--accent-dim);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  audio {
+    width: 100%;
+    margin-top: 0.75rem;
+    accent-color: var(--accent);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 0.25rem;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .badge {
+    display: inline-block;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎙️ OmniVoice TTS</h1>
+  <p>Clonare vocală & sinteză text-to-speech în 600+ limbi</p>
+</header>
+
+<div class="container">
+
+  <!-- STEP 1: VOICE -->
+  <div class="card">
+    <h2><span class="dot"></span> Voce</h2>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="saved">Voci salvate</div>
+      <div class="tab" data-tab="upload-new">Voce nouă</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-saved">
+      <div class="voice-grid" id="voice-grid">
+        <button class="voice-btn voice-btn-none active" data-voice="">
+          <span class="icon">🎲</span> Automată
+        </button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-upload-new">
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <div>
+          <label>Nume voce</label>
+          <input type="text" id="new-voice-name" placeholder="ex: Vocea Mea" />
+        </div>
+        <div>
+          <label>Fișier audio (3–10 sec, WAV/MP3)</label>
+          <div class="upload-zone" id="clone-zone">
+            <input type="file" id="clone-file" accept="audio/*" />
+            <p>📂 Click sau trage un fișier audio</p>
+            <div class="filename" id="clone-filename"></div>
+          </div>
+        </div>
+        <div>
+          <label>Transcriere audio (opțional — altfel Whisper auto-transcrie)</label>
+          <input type="text" id="clone-ref-text" placeholder="Ce se spune în clipul audio..." />
+        </div>
+        <button class="btn btn-sm" id="btn-save-voice">💾 Salvează vocea</button>
+        <div class="status-bar" id="clone-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: TTS -->
+  <div class="card">
+    <h2><span class="dot"></span> Sinteză</h2>
+    <div style="margin-bottom:1rem;">
+      <label>Text de sintetizat</label>
+      <textarea id="tts-text" placeholder="Scrie textul pe care vrei să-l auzi..."></textarea>
+    </div>
+    <button class="btn" id="btn-generate" style="width:100%;">▶ Generează audio</button>
+    <div class="status-bar" id="tts-status" style="margin-top:0.75rem;"></div>
+    <audio id="audio-player" controls style="display:none;"></audio>
+  </div>
+
+</div>
+
+<script>
+const API = '';
+let selectedVoice = '';
+let pollTimer = null;
+
+// ── Tabs ──
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const group = tab.closest('.card');
+    group.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    group.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Upload zone ──
+function setupZone(zoneId, inputId, filenameId) {
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  const fname = document.getElementById(filenameId);
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) {
+      const dt = new DataTransfer();
+      dt.items.add(e.dataTransfer.files[0]);
+      input.files = dt.files;
+      fname.textContent = e.dataTransfer.files[0].name;
+    }
+  });
+  input.addEventListener('change', () => {
+    fname.textContent = input.files[0]?.name || '';
+  });
+}
+setupZone('clone-zone', 'clone-file', 'clone-filename');
+
+// ── Load voices ──
+async function loadVoices() {
+  const res = await fetch('/api/voices');
+  const voices = await res.json();
+  const grid = document.getElementById('voice-grid');
+  // keep first button (auto)
+  while (grid.children.length > 1) grid.removeChild(grid.lastChild);
+  Object.entries(voices).forEach(([id, v]) => {
+    const btn = document.createElement('button');
+    btn.className = 'voice-btn';
+    btn.dataset.voice = id;
+    btn.innerHTML = `<span class="icon">🎙️</span> ${v.name}`;
+    btn.addEventListener('click', () => selectVoice(id, btn));
+    grid.appendChild(btn);
+  });
+}
+
+function selectVoice(id, btn) {
+  selectedVoice = id;
+  document.querySelectorAll('.voice-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+document.querySelector('.voice-btn[data-voice=""]').addEventListener('click', function() {
+  selectVoice('', this);
+});
+
+loadVoices();
+
+// ── Save voice ──
+document.getElementById('btn-save-voice').addEventListener('click', async () => {
+  const name = document.getElementById('new-voice-name').value.trim();
+  const file = document.getElementById('clone-file').files[0];
+  const refText = document.getElementById('clone-ref-text').value.trim();
+  const status = document.getElementById('clone-status');
+
+  if (!name) { showStatus(status, 'error', '❌ Introdu un nume pentru voce.'); return; }
+  if (!file) { showStatus(status, 'error', '❌ Selectează un fișier audio.'); return; }
+
+  showStatus(status, 'loading', 'Se salvează vocea...');
+
+  const fd = new FormData();
+  fd.append('audio', file);
+  fd.append('name', name);
+  if (refText) fd.append('ref_text', refText);
+
+  try {
+    const res = await fetch('/api/clone-voice', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    showStatus(status, 'success', `✅ Vocea "${data.name}" a fost salvată!`);
+    await loadVoices();
+    // switch to saved tab
+    document.querySelector('.tab[data-tab="saved"]').click();
+  } catch(e) {
+    showStatus(status, 'error', '❌ ' + e.message);
+  }
+});
+
+// ── Generate TTS ──
+document.getElementById('btn-generate').addEventListener('click', async () => {
+  const text = document.getElementById('tts-text').value.trim();
+  const status = document.getElementById('tts-status');
+  const audio = document.getElementById('audio-player');
+
+  if (!text) { showStatus(status, 'error', '❌ Introdu un text.'); return; }
+
+  document.getElementById('btn-generate').disabled = true;
+  audio.style.display = 'none';
+  showStatus(status, 'loading', 'Se generează audio...');
+
+  const fd = new FormData();
+  fd.append('text', text);
+  if (selectedVoice) fd.append('voice_id', selectedVoice);
+
+  try {
+    const res = await fetch('/api/synthesize', { method: 'POST', body: fd });
+    const { job_id, error } = await res.json();
+    if (error) throw new Error(error);
+    pollJob(job_id, status, audio);
+  } catch(e) {
+    showStatus(status, 'error', '❌ ' + e.message);
+    document.getElementById('btn-generate').disabled = false;
+  }
+});
+
+function pollJob(jobId, status, audio) {
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/job/${jobId}`);
+      const job = await res.json();
+      if (job.status === 'done') {
+        audio.src = `/api/audio/${jobId}`;
+        audio.style.display = 'block';
+        hideStatus(status);
+        document.getElementById('btn-generate').disabled = false;
+      } else if (job.status === 'error') {
+        showStatus(status, 'error', '❌ ' + (job.error || 'Eroare necunoscută'));
+        document.getElementById('btn-generate').disabled = false;
+      } else {
+        showStatus(status, 'loading', job.status === 'running' ? 'Se sintetizează...' : 'În așteptare...');
+        pollJob(jobId, status, audio);
+      }
+    } catch(e) {
+      showStatus(status, 'error', '❌ Eroare de rețea');
+      document.getElementById('btn-generate').disabled = false;
+    }
+  }, 1500);
+}
+
+function showStatus(el, type, msg) {
+  el.className = 'status-bar visible ' + (type === 'error' ? 'error' : type === 'success' ? 'success' : '');
+  el.innerHTML = type === 'loading'
+    ? `<div class="spinner"></div><span>${msg}</span>`
+    : `<span>${msg}</span>`;
+}
+
+function hideStatus(el) {
+  el.className = 'status-bar';
+  el.innerHTML = '';
+}
+</script>
+</body>
+</html>
